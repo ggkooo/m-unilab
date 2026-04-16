@@ -41,3 +41,12 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Android/Gradle build artifacts (including local modules)
+.gradle/
+**/android/.gradle/
+**/android/.cxx/
+**/android/build/
+**/android/local.properties
+*.apk
+*.aab
