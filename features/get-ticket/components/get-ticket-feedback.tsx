@@ -5,6 +5,7 @@ import type { FeedbackType } from '../types';
 type GetTicketFeedbackProps = {
   message: string;
   type: Exclude<FeedbackType, null>;
+  onDismiss?: () => void;
 };
 
 export function GetTicketFeedback({ message, type }: GetTicketFeedbackProps) {
