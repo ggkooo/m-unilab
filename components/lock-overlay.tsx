@@ -1,12 +1,8 @@
-import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, BackHandler, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useMemo } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const PIN_KEY = 'kiosk_pin';
-const PIN_LENGTH = 4;
-
-type Step = 'loading' | 'setup-enter' | 'setup-confirm' | 'unlock' | 'exit';
+import { useLockOverlay } from '@/features/kiosk/hooks/use-lock-overlay';
 
 interface Props {
   visible: boolean;
@@ -17,116 +13,23 @@ interface Props {
 }
 
 export function LockOverlay({ visible, exitMode, onUnlocked, onExited, onPinCreated }: Props) {
-  const [step, setStep] = useState<Step>('loading');
-  const [pin, setPin] = useState('');
-  const [firstPin, setFirstPin] = useState('');
-  const [error, setError] = useState('');
+  const { error, pin, step, handleDelete, handleDigit, cancelExit, pinLength } = useLockOverlay({
+    visible,
+    exitMode,
+    onUnlocked,
+    onExited,
+    onPinCreated,
+  });
 
-  // Garante que o botão voltar não funcione mesmo sem o contexto
-  useEffect(() => {
-    if (!visible) return;
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => sub.remove();
-  }, [visible]);
-
-  // Determina o step inicial a partir do PIN armazenado
-  useEffect(() => {
-    if (!visible) return;
-    let isMounted = true;
-
-    setStep('loading');
-    setPin('');
-    setError('');
-    setFirstPin('');
-
-    const timeoutId = setTimeout(() => {
-      if (!isMounted) return;
-      setError('Nao foi possivel carregar o PIN salvo. Configure novamente.');
-      setStep('setup-enter');
-    }, 4000);
-
-    SecureStore.getItemAsync(PIN_KEY)
-      .then((stored) => {
-        if (!isMounted) return;
-        clearTimeout(timeoutId);
-        setStep(stored ? (exitMode ? 'exit' : 'unlock') : 'setup-enter');
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        clearTimeout(timeoutId);
-        setError('Nao foi possivel carregar o PIN salvo. Configure novamente.');
-        setStep('setup-enter');
-      });
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
-  }, [visible, exitMode]);
-
-  const handleDigit = useCallback(
-    async (digit: string) => {
-      if (pin.length >= PIN_LENGTH) return;
-      const newPin = pin + digit;
-      setPin(newPin);
-      setError('');
-
-      if (newPin.length < PIN_LENGTH) return;
-
-      if (step === 'setup-enter') {
-        setFirstPin(newPin);
-        setPin('');
-        setStep('setup-confirm');
-        return;
-      }
-
-      if (step === 'setup-confirm') {
-        if (newPin === firstPin) {
-          await SecureStore.setItemAsync(PIN_KEY, newPin);
-          setPin('');
-          setFirstPin('');
-          onPinCreated();
-        } else {
-          setError('Os PINs não coincidem. Tente novamente.');
-          setPin('');
-          setFirstPin('');
-          setStep('setup-enter');
-        }
-        return;
-      }
-
-      if (step === 'unlock' || step === 'exit') {
-        const stored = await SecureStore.getItemAsync(PIN_KEY);
-        if (newPin === stored) {
-          setPin('');
-          if (step === 'exit') {
-            onExited();
-          } else {
-            onUnlocked();
-          }
-        } else {
-          setError('PIN incorreto. Tente novamente.');
-          setPin('');
-        }
-      }
-    },
-    [pin, step, firstPin, onUnlocked, onExited, onPinCreated],
-  );
-
-  const handleDelete = useCallback(() => {
-    setPin((prev) => prev.slice(0, -1));
-    setError('');
-  }, []);
-
-  if (!visible) return null;
-
-  const titles: Record<Step, string> = {
+  const titles = useMemo<Record<string, string>>(() => ({
     loading: 'Carregando...',
     'setup-enter': 'Crie um PIN de acesso',
     'setup-confirm': 'Confirme o PIN',
     unlock: 'Digite o PIN para continuar',
     exit: 'Digite o PIN para sair do app',
-  };
+  }), []);
+
+  if (!visible) return null;
 
   return (
     <View style={styles.container}>
@@ -149,9 +52,8 @@ export function LockOverlay({ visible, exitMode, onUnlocked, onExited, onPinCrea
           <ActivityIndicator size="large" color="#3b82f6" />
         ) : (
           <>
-            {/* Indicadores de dígitos */}
             <View style={styles.dotsContainer}>
-              {Array.from({ length: PIN_LENGTH }).map((_, i) => (
+              {Array.from({ length: pinLength }).map((_, i) => (
                 <View
                   key={i}
                   style={[styles.dot, i < pin.length ? styles.dotFilled : styles.dotEmpty]}
@@ -188,7 +90,7 @@ export function LockOverlay({ visible, exitMode, onUnlocked, onExited, onPinCrea
             {step === 'exit' && (
               <TouchableOpacity
                 style={styles.secondaryButton}
-                onPress={() => { setStep('unlock'); setPin(''); setError(''); }}
+                onPress={cancelExit}
               >
                 <Text style={styles.secondaryButtonText}>Cancelar</Text>
               </TouchableOpacity>
