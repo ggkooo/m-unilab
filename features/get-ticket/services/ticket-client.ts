@@ -29,10 +29,7 @@ export class HttpTicketClient implements TicketClient {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        ...payload,
-        location: config.location ?? payload.location,
-      }),
+      body: JSON.stringify(payload),
       signal: controller.signal,
     }).finally(() => clearTimeout(timeoutId));
 

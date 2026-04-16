@@ -22,7 +22,6 @@ export type ServiceOption = {
 
 export type CreateTicketPayload = {
   service_type: string;
-  location: string;
 };
 
 export type CreateTicketResponse = {

@@ -1,5 +1,5 @@
 const DEFAULT_BASE_URL = '';
-const DEFAULT_TICKETS_PATH = '/tickets';
+const DEFAULT_TICKETS_PATH = '/api/tickets';
 const DEFAULT_TIMEOUT_MS = 10000;
 
 const normalizeBaseUrl = (url: string) => url.replace(/\/+$/, '');
@@ -20,7 +20,6 @@ export type ApiConfig = {
   ticketsPath: string;
   apiKey: string | null;
   timeoutMs: number;
-  location: string | null;
   explicitTicketUrl: string | null;
 };
 
@@ -32,7 +31,6 @@ export function getApiConfig(): ApiConfig {
     ticketsPath: normalizePath(process.env.EXPO_PUBLIC_API_TICKETS_PATH ?? DEFAULT_TICKETS_PATH),
     apiKey: getOptionalEnvValue(process.env.EXPO_PUBLIC_API_KEY),
     timeoutMs: getTimeout(process.env.EXPO_PUBLIC_API_TIMEOUT_MS),
-    location: getOptionalEnvValue(process.env.EXPO_PUBLIC_LOCATION),
     explicitTicketUrl: getOptionalEnvValue(process.env.EXPO_PUBLIC_TICKET_API_URL),
   };
 }
@@ -52,5 +50,12 @@ export function buildApiUrl(path: string, baseUrl?: string | null) {
     throw new Error('Base URL da API nao configurada.');
   }
 
-  return `${normalizeBaseUrl(baseUrl)}${normalizePath(path)}`;
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+  const normalizedPath = normalizePath(path);
+
+  if (normalizedBaseUrl.endsWith('/api') && normalizedPath.startsWith('/api/')) {
+    return `${normalizedBaseUrl}${normalizedPath.slice(4)}`;
+  }
+
+  return `${normalizedBaseUrl}${normalizedPath}`;
 };

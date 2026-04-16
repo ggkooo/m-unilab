@@ -3,12 +3,11 @@ import { useCallback, useState } from 'react';
 import { createTicket } from '../services/ticket-service';
 
 type UseTicketRequestParams = {
-  location: string;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
 };
 
-export function useTicketRequest({ location, onSuccess, onError }: UseTicketRequestParams) {
+export function useTicketRequest({ onSuccess, onError }: UseTicketRequestParams) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedService, setSelectedService] = useState<string | null>(null);
 
@@ -22,7 +21,7 @@ export function useTicketRequest({ location, onSuccess, onError }: UseTicketRequ
       setSelectedService(serviceType);
 
       try {
-        const result = await createTicket({ service_type: serviceType, location });
+        const result = await createTicket({ service_type: serviceType });
         const isBackgroundPrint = result.printStatus?.toLowerCase() === 'enviando';
 
         onSuccess(
@@ -37,7 +36,7 @@ export function useTicketRequest({ location, onSuccess, onError }: UseTicketRequ
         setSelectedService(null);
       }
     },
-    [isSubmitting, location, onError, onSuccess],
+    [isSubmitting, onError, onSuccess],
   );
 
   return {

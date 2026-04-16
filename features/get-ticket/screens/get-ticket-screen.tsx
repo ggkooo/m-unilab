@@ -8,17 +8,12 @@ import { SERVICE_OPTIONS } from '../constants';
 import { useServiceGridLayout } from '../hooks/use-service-grid-layout';
 import { useTicketFeedback } from '../hooks/use-ticket-feedback';
 import { useTicketRequest } from '../hooks/use-ticket-request';
-import { DEFAULT_CAMPUS_LOCATION } from '../locations';
-import { useRouteLocation } from '../locations/use-route-location';
 
 export function GetTicketScreen() {
   const { width, height } = useWindowDimensions();
-  const routeLocation = useRouteLocation();
-  const activeLocation = routeLocation ?? DEFAULT_CAMPUS_LOCATION;
   const { isLandscape, cardWidth } = useServiceGridLayout({ width, height });
   const { feedback, clearFeedback, showFeedback } = useTicketFeedback();
   const { isSubmitting, selectedService, submitTicket } = useTicketRequest({
-    location: activeLocation,
     onSuccess: (message) => showFeedback(message, 'success'),
     onError: (message) => showFeedback(message, 'error'),
   });
