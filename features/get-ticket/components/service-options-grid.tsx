@@ -22,17 +22,25 @@ export function ServiceOptionsGrid({
 }: ServiceOptionsGridProps) {
   return (
     <View style={[styles.grid, isLandscape ? styles.gridLandscape : styles.gridPortrait]}>
-      {options.map((option) => (
+      {options.map((option) => {
+        const width = isLandscape
+          ? option.fullWidth
+            ? '100%'
+            : '49%'
+          : cardWidth;
+
+        return (
         <ServiceOptionCard
           key={option.title}
           option={option}
-          width={cardWidth}
+          width={width}
           isLandscape={isLandscape}
           isSubmitting={isSubmitting}
           isLoading={isSubmitting && selectedService === option.title}
           onSelect={onSelectService}
         />
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -45,6 +53,7 @@ const styles = StyleSheet.create({
   gridLandscape: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   gridPortrait: {
     flexDirection: 'column',
