@@ -5,7 +5,7 @@ import type { ServiceOption } from '../types';
 
 type ServiceOptionCardProps = {
   option: ServiceOption;
-  width: number;
+  width: number | `${number}%`;
   isLandscape: boolean;
   isSubmitting: boolean;
   isLoading: boolean;
