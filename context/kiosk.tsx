@@ -36,18 +36,32 @@ export function KioskProvider({ children }: PropsWithChildren) {
   const [exitMode, setExitMode] = useState(false);
   const appStateRef = useRef(AppState.currentState);
 
-  // Esconde a barra de navegação (Android) ao iniciar
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
+  const hideNavigationBar = useCallback(() => {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+
     NavigationBar.setVisibilityAsync('hidden').catch(() => {});
+  }, []);
+
+  const enableLockTask = useCallback(() => {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+
     startLockTask();
   }, []);
 
+  // Esconde a barra de navegação (Android) ao iniciar
+  useEffect(() => {
+    hideNavigationBar();
+    enableLockTask();
+  }, [enableLockTask, hideNavigationBar]);
+
   // Reesconde a barra de navegação quando a tela é desbloqueada (pode ter voltado a aparecer)
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    NavigationBar.setVisibilityAsync('hidden').catch(() => {});
-  }, [isLocked]);
+    hideNavigationBar();
+  }, [hideNavigationBar, isLocked]);
 
   // Retrava o app quando ele volta do background
   useEffect(() => {
@@ -58,13 +72,11 @@ export function KioskProvider({ children }: PropsWithChildren) {
       if (prevState === 'background' && nextState === 'active') {
         setIsLocked(true);
         setExitMode(false);
-        if (Platform.OS === 'android') {
-          NavigationBar.setVisibilityAsync('hidden').catch(() => {});
-        }
+        hideNavigationBar();
       }
     });
     return () => sub.remove();
-  }, []);
+  }, [hideNavigationBar]);
 
   const lock = useCallback(() => {
     setIsLocked(true);
@@ -95,8 +107,8 @@ export function KioskProvider({ children }: PropsWithChildren) {
   const onPinCreated = useCallback(() => {
     setIsLocked(false);
     setExitMode(false);
-    startLockTask();
-  }, []);
+    enableLockTask();
+  }, [enableLockTask]);
 
   const exitApp = useCallback(() => {
     stopLockTask();
