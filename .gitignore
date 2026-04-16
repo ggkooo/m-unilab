@@ -50,3 +50,4 @@ app-example
 **/android/local.properties
 *.apk
 *.aab
+.env
