@@ -128,17 +128,17 @@ Available variables:
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `EXPO_PUBLIC_API_BASE_URL` | Usually yes | Base URL for the backend API, for example `http://server:8000/api`. |
-| `EXPO_PUBLIC_API_TICKETS_PATH` | No | Ticket endpoint path. Default is `/tickets`. |
-| `EXPO_PUBLIC_API_KEY` | Optional | API key sent as `X-API-KEY`. |
+| `EXPO_PUBLIC_API_BASE_URL` | Usually yes | Base URL for the backend API, for example `http://server:8000` or `http://server:8000/api`. |
+| `EXPO_PUBLIC_API_TICKETS_PATH` | No | Ticket endpoint path. Default is `/api/tickets`. |
+| `EXPO_PUBLIC_API_KEY` | Optional | API key sent as `X-API-KEY` in the ticket request. |
 | `EXPO_PUBLIC_API_TIMEOUT_MS` | No | Request timeout in milliseconds. Defaults to `10000` in code if missing or invalid. |
-| `EXPO_PUBLIC_LOCATION` | Optional | Overrides location sent to the API. |
 | `EXPO_PUBLIC_TICKET_API_URL` | Optional | Full explicit ticket endpoint URL. When set, it overrides base URL plus path composition. |
 
 Behavior notes:
 
 - If `EXPO_PUBLIC_TICKET_API_URL` is set, it is used directly.
 - If it is not set, the app builds the endpoint from `EXPO_PUBLIC_API_BASE_URL` and `EXPO_PUBLIC_API_TICKETS_PATH`.
+- The ticket request sends only `{ "service_type": "<nome do atendimento>" }` in the JSON body and includes `X-API-KEY` when `EXPO_PUBLIC_API_KEY` is configured.
 - If no API base URL is configured, the app falls back to a simulated success response for the ticket request flow.
 
 ## Quick Start
