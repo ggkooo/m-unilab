@@ -1,98 +1,154 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { useKiosk } from '@/context/kiosk';
+import { GetTicketFeedback } from './get-ticket/components/get-ticket-feedback';
+import { GetTicketHero } from './get-ticket/components/get-ticket-hero';
+import { ServiceOptionsGrid } from './get-ticket/components/service-options-grid';
+import { SERVICE_OPTIONS } from './get-ticket/constants';
+import { DEFAULT_CAMPUS_LOCATION } from './get-ticket/locations';
+import { useRouteLocation } from './get-ticket/locations/use-route-location';
+import { createTicket } from './get-ticket/services/ticket-service';
+import type { FeedbackType } from './get-ticket/types';
 
-export default function HomeScreen() {
+export default function GetTicketScreen() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+  useKiosk();
+  const routeLocation = useRouteLocation();
+
+  const activeLocation = routeLocation ?? DEFAULT_CAMPUS_LOCATION;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackType, setFeedbackType] = useState<FeedbackType>(null);
+
+  useEffect(() => {
+    if (feedbackType !== 'success' || !feedback) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setFeedback(null);
+      setFeedbackType(null);
+    }, 3000);
+
+    return () => clearTimeout(timeoutId);
+  }, [feedback, feedbackType]);
+
+  const cardWidth = useMemo(() => {
+    if (isLandscape) {
+      return (width - 96) / 3;
+    }
+    return width - 48;
+  }, [isLandscape, width]);
+
+  const handleCreateTicket = useCallback(async (serviceType: string) => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSelectedService(serviceType);
+    setFeedback(null);
+    setFeedbackType(null);
+
+    try {
+      const result = await createTicket({ serviceType, location: activeLocation });
+      const isBackgroundPrint = result.printStatus?.toLowerCase() === 'enviando';
+
+      setFeedback(
+        isBackgroundPrint
+          ? `Solicitacao recebida: ${serviceType}. Impressao em envio.`
+          : `Solicitacao enviada: ${serviceType}.`,
+      );
+      setFeedbackType('success');
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : 'Falha de comunicacao com a API.');
+      setFeedbackType('error');
+    } finally {
+      setIsSubmitting(false);
+      setSelectedService(null);
+    }
+  }, [activeLocation, isSubmitting]);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.backgroundGlowTop} />
+      <View style={styles.backgroundGlowBottom} />
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.content,
+          isLandscape ? styles.contentLandscape : styles.contentPortrait,
+        ]}>
+        <View style={styles.headerRow}>
+          <GetTicketHero />
+        </View>
+
+        {!!feedback && !!feedbackType && <GetTicketFeedback message={feedback} type={feedbackType} />}
+
+        <ServiceOptionsGrid
+          options={SERVICE_OPTIONS}
+          isSubmitting={isSubmitting}
+          selectedService={selectedService}
+          cardWidth={cardWidth}
+          isLandscape={isLandscape}
+          onSelectService={handleCreateTicket}
+        />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    maxWidth: 1280,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  contentLandscape: {
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+  },
+  contentPortrait: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  backgroundGlowTop: {
+    position: 'absolute',
+    top: -70,
+    left: -60,
+    width: 220,
+    height: 220,
+    borderRadius: 999,
+    backgroundColor: '#dbeafe',
+  },
+  backgroundGlowBottom: {
+    position: 'absolute',
+    bottom: -90,
+    right: -60,
+    width: 250,
+    height: 250,
+    borderRadius: 999,
+    backgroundColor: '#d1fae5',
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 14,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+
 });
