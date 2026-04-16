@@ -1,17 +1,18 @@
 {
   "expo": {
-    "name": "screen-blocker",
-    "slug": "screen-blocker",
+    "name": "UniLab",
+    "slug": "m-unilab",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "landscape",
     "icon": "./assets/images/icon.png",
-    "scheme": "screenblocker",
+    "scheme": "munilab",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.screenblocker",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -38,11 +39,19 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-secure-store",
+      "./plugins/with-kiosk-mode"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6680b1ba-f16a-4be9-8610-e476608ecef3"
+      }
     }
   }
 }
